@@ -30,18 +30,36 @@ export const completeOnboarding = async (userData) => {
 };
 
 export async function getUserFriends() {
-  const response = await axiosInstance.get("/users/friends");
-  return response.data;
+  try {
+    const response = await axiosInstance.get("/users/friends");
+    // Ensure we return an array even if response.data is null/undefined
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Error in getUserFriends:", error);
+    throw error;
+  }
 }
 
 export async function getRecommendedUsers() {
-  const response = await axiosInstance.get("/users");
-  return response.data;
+  try {
+    const response = await axiosInstance.get("/users");
+    // Ensure we return an array even if response.data is null/undefined
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Error in getRecommendedUsers:", error);
+    throw error;
+  }
 }
 
 export async function getOutgoingFriendReqs() {
-  const response = await axiosInstance.get("/users/outgoing-friend-requests");
-  return response.data;
+  try {
+    const response = await axiosInstance.get("/users/outgoing-friend-requests");
+    // Ensure we return an array even if response.data is null/undefined
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Error in getOutgoingFriendReqs:", error);
+    throw error;
+  }
 }
 
 export async function sendFriendRequest(userId) {

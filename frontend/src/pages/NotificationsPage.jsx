@@ -42,41 +42,61 @@ const NotificationsPage = () => {
                 </h2>
 
                 <div className="space-y-3">
-                  {incomingRequests.map((request) => (
-                    <div
-                      key={request._id}
-                      className="card bg-base-200 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="card-body p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="avatar w-14 h-14 rounded-full bg-base-300">
-                              <img src={request.sender.profilePic} alt={request.sender.fullName} />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">{request.sender.fullName}</h3>
-                              <div className="flex flex-wrap gap-1.5 mt-1">
-                                <span className="badge badge-secondary badge-sm">
-                                  Native: {request.sender.nativeLanguage}
-                                </span>
-                                <span className="badge badge-outline badge-sm">
-                                  Learning: {request.sender.learningLanguage}
-                                </span>
+                  {incomingRequests.map((request) => {
+                    // Add null checks for request and sender
+                    if (!request || !request._id || !request.sender) {
+                      console.warn("Invalid request object in NotificationsPage:", request);
+                      return null;
+                    }
+
+                    const sender = request.sender;
+                    const senderName = sender.fullName || "Unknown User";
+                    const senderProfilePic = sender.profilePic || "https://via.placeholder.com/150x150/4A5568/FFFFFF?text=User";
+                    const nativeLanguage = sender.nativeLanguage || "Unknown";
+                    const learningLanguage = sender.learningLanguage || "Unknown";
+
+                    return (
+                      <div
+                        key={request._id}
+                        className="card bg-base-200 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="card-body p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="avatar w-14 h-14 rounded-full bg-base-300">
+                                <img 
+                                  src={senderProfilePic} 
+                                  alt={senderName}
+                                  onError={(e) => {
+                                    e.target.src = "https://via.placeholder.com/150x150/4A5568/FFFFFF?text=User";
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold">{senderName}</h3>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  <span className="badge badge-secondary badge-sm">
+                                    Native: {nativeLanguage}
+                                  </span>
+                                  <span className="badge badge-outline badge-sm">
+                                    Learning: {learningLanguage}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => acceptRequestMutation(request._id)}
-                            disabled={isPending}
-                          >
-                            Accept
-                          </button>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => acceptRequestMutation(request._id)}
+                              disabled={isPending}
+                            >
+                              Accept
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -90,34 +110,49 @@ const NotificationsPage = () => {
                 </h2>
 
                 <div className="space-y-3">
-                  {acceptedRequests.map((notification) => (
-                    <div key={notification._id} className="card bg-base-200 shadow-sm">
-                      <div className="card-body p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="avatar mt-1 size-10 rounded-full">
-                            <img
-                              src={notification.recipient.profilePic}
-                              alt={notification.recipient.fullName}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{notification.recipient.fullName}</h3>
-                            <p className="text-sm my-1">
-                              {notification.recipient.fullName} accepted your friend request
-                            </p>
-                            <p className="text-xs flex items-center opacity-70">
-                              <ClockIcon className="h-3 w-3 mr-1" />
-                              Recently
-                            </p>
-                          </div>
-                          <div className="badge badge-success">
-                            <MessageSquareIcon className="h-3 w-3 mr-1" />
-                            New Friend
+                  {acceptedRequests.map((notification) => {
+                    // Add null checks for notification and recipient
+                    if (!notification || !notification._id || !notification.recipient) {
+                      console.warn("Invalid notification object in NotificationsPage:", notification);
+                      return null;
+                    }
+
+                    const recipient = notification.recipient;
+                    const recipientName = recipient.fullName || "Unknown User";
+                    const recipientProfilePic = recipient.profilePic || "https://via.placeholder.com/150x150/4A5568/FFFFFF?text=User";
+
+                    return (
+                      <div key={notification._id} className="card bg-base-200 shadow-sm">
+                        <div className="card-body p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="avatar mt-1 size-10 rounded-full">
+                              <img
+                                src={recipientProfilePic}
+                                alt={recipientName}
+                                onError={(e) => {
+                                  e.target.src = "https://via.placeholder.com/150x150/4A5568/FFFFFF?text=User";
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{recipientName}</h3>
+                              <p className="text-sm my-1">
+                                {recipientName} accepted your friend request
+                              </p>
+                              <p className="text-xs flex items-center opacity-70">
+                                <ClockIcon className="h-3 w-3 mr-1" />
+                                Recently
+                              </p>
+                            </div>
+                            <div className="badge badge-success">
+                              <MessageSquareIcon className="h-3 w-3 mr-1" />
+                              New Friend
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             )}

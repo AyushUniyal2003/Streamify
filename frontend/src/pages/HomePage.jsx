@@ -40,9 +40,12 @@ const HomePage = () => {
 
   useEffect(() => {
     const outgoingIds = new Set();
-    if (outgoingFriendReqs && outgoingFriendReqs.length > 0) {
+    if (outgoingFriendReqs && Array.isArray(outgoingFriendReqs) && outgoingFriendReqs.length > 0) {
       outgoingFriendReqs.forEach((req) => {
-        outgoingIds.add(req.recipient._id);
+        // Add null checks for req and req.recipient
+        if (req && req.recipient && req.recipient._id) {
+          outgoingIds.add(req.recipient._id);
+        }
       });
       setOutgoingRequestsIds(outgoingIds);
     }
@@ -67,9 +70,14 @@ const HomePage = () => {
           <NoFriendsFound />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {friends.map((friend) => (
-              <FriendCard key={friend._id} friend={friend} />
-            ))}
+            {friends.map((friend) => {
+              // Add null check for friend object
+              if (!friend || !friend._id) {
+                console.warn("Invalid friend object in HomePage:", friend);
+                return null;
+              }
+              return <FriendCard key={friend._id} friend={friend} />;
+            })}
           </div>
         )}
 
@@ -99,7 +107,19 @@ const HomePage = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommendedUsers.map((user) => {
+                // Add null checks for user object
+                if (!user || !user._id) {
+                  console.warn("Invalid user object in recommendedUsers:", user);
+                  return null;
+                }
+
                 const hasRequestBeenSent = outgoingRequestsIds.has(user._id);
+                
+                // Provide fallback values
+                const userName = user.fullName || "Unknown User";
+                const userProfilePic = user.profilePic || "https://via.placeholder.com/150x150/4A5568/FFFFFF?text=User";
+                const nativeLanguage = user.nativeLanguage || "Unknown";
+                const learningLanguage = user.learningLanguage || "Unknown";
 
                 return (
                   <div
@@ -109,11 +129,17 @@ const HomePage = () => {
                     <div className="card-body p-5 space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="avatar size-16 rounded-full">
-                          <img src={user.profilePic} alt={user.fullName} />
+                          <img 
+                            src={userProfilePic} 
+                            alt={userName}
+                            onError={(e) => {
+                              e.target.src = "https://via.placeholder.com/150x150/4A5568/FFFFFF?text=User";
+                            }}
+                          />
                         </div>
 
                         <div>
-                          <h3 className="font-semibold text-lg">{user.fullName}</h3>
+                          <h3 className="font-semibold text-lg">{userName}</h3>
                           {user.location && (
                             <div className="flex items-center text-xs opacity-70 mt-1">
                               <MapPinIcon className="size-3 mr-1" />
@@ -126,12 +152,12 @@ const HomePage = () => {
                       {/* Languages with flags */}
                       <div className="flex flex-wrap gap-1.5">
                         <span className="badge badge-secondary">
-                          {getLanguageFlag(user.nativeLanguage)}
-                          Native: {capitialize(user.nativeLanguage)}
+                          {getLanguageFlag(nativeLanguage)}
+                          Native: {capitialize(nativeLanguage)}
                         </span>
                         <span className="badge badge-outline">
-                          {getLanguageFlag(user.learningLanguage)}
-                          Learning: {capitialize(user.learningLanguage)}
+                          {getLanguageFlag(learningLanguage)}
+                          Learning: {capitialize(learningLanguage)}
                         </span>
                       </div>
 

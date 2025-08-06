@@ -3,17 +3,29 @@ import FriendRequest from "../models/FriendRequest.js";
 
 export async function getRecommendedUsers(req, res) {
   try {
+    // Check if user exists in request
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
     const currentUserId = req.user.id;
     const currentUser = req.user;
+
+    // Ensure friends array exists, default to empty array if null/undefined
+    const friendsArray = currentUser.friends || [];
 
     const recommendedUsers = await User.find({
       $and: [
         { _id: { $ne: currentUserId } }, //exclude current user
-        { _id: { $nin: currentUser.friends } }, // exclude current user's friends
+        { _id: { $nin: friendsArray } }, // exclude current user's friends
         { isOnboarded: true },
       ],
     });
-    res.status(200).json(recommendedUsers);
+
+    // Filter out any null/undefined users
+    const validUsers = recommendedUsers.filter(user => user != null);
+
+    res.status(200).json(validUsers);
   } catch (error) {
     console.error("Error in getRecommendedUsers controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
@@ -22,11 +34,24 @@ export async function getRecommendedUsers(req, res) {
 
 export async function getMyFriends(req, res) {
   try {
+    // Check if user exists in request
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
     const user = await User.findById(req.user.id)
       .select("friends")
       .populate("friends", "fullName profilePic nativeLanguage learningLanguage");
 
-    res.status(200).json(user.friends);
+    // Check if user exists
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure friends array exists and filter out any null/undefined entries
+    const friends = user.friends ? user.friends.filter(friend => friend != null) : [];
+
+    res.status(200).json(friends);
   } catch (error) {
     console.error("Error in getMyFriends controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
@@ -35,8 +60,18 @@ export async function getMyFriends(req, res) {
 
 export async function sendFriendRequest(req, res) {
   try {
+    // Check if user exists in request
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
     const myId = req.user.id;
     const { id: recipientId } = req.params;
+
+    // Validate recipientId
+    if (!recipientId) {
+      return res.status(400).json({ message: "Recipient ID is required" });
+    }
 
     // prevent sending req to yourself
     if (myId === recipientId) {
@@ -48,8 +83,9 @@ export async function sendFriendRequest(req, res) {
       return res.status(404).json({ message: "Recipient not found" });
     }
 
-    // check if user is already friends
-    if (recipient.friends.includes(myId)) {
+    // check if user is already friends - handle null/undefined friends array
+    const recipientFriends = recipient.friends || [];
+    if (recipientFriends.includes(myId)) {
       return res.status(400).json({ message: "You are already friends with this user" });
     }
 
@@ -81,7 +117,17 @@ export async function sendFriendRequest(req, res) {
 
 export async function acceptFriendRequest(req, res) {
   try {
+    // Check if user exists in request
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
     const { id: requestId } = req.params;
+
+    // Validate requestId
+    if (!requestId) {
+      return res.status(400).json({ message: "Request ID is required" });
+    }
 
     const friendRequest = await FriendRequest.findById(requestId);
 
@@ -89,8 +135,8 @@ export async function acceptFriendRequest(req, res) {
       return res.status(404).json({ message: "Friend request not found" });
     }
 
-    // Verify the current user is the recipient
-    if (friendRequest.recipient.toString() !== req.user.id) {
+    // Verify the current user is the recipient - handle null/undefined recipient
+    if (!friendRequest.recipient || friendRequest.recipient.toString() !== req.user.id) {
       return res.status(403).json({ message: "You are not authorized to accept this request" });
     }
 
@@ -116,6 +162,11 @@ export async function acceptFriendRequest(req, res) {
 
 export async function getFriendRequests(req, res) {
   try {
+    // Check if user exists in request
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
     const incomingReqs = await FriendRequest.find({
       recipient: req.user.id,
       status: "pending",
@@ -126,21 +177,36 @@ export async function getFriendRequests(req, res) {
       status: "accepted",
     }).populate("recipient", "fullName profilePic");
 
-    res.status(200).json({ incomingReqs, acceptedReqs });
+    // Filter out any null/undefined requests
+    const validIncomingReqs = incomingReqs ? incomingReqs.filter(req => req != null) : [];
+    const validAcceptedReqs = acceptedReqs ? acceptedReqs.filter(req => req != null) : [];
+
+    res.status(200).json({ 
+      incomingReqs: validIncomingReqs, 
+      acceptedReqs: validAcceptedReqs 
+    });
   } catch (error) {
-    console.log("Error in getPendingFriendRequests controller", error.message);
+    console.log("Error in getFriendRequests controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
 
 export async function getOutgoingFriendReqs(req, res) {
   try {
+    // Check if user exists in request
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
     const outgoingRequests = await FriendRequest.find({
       sender: req.user.id,
       status: "pending",
     }).populate("recipient", "fullName profilePic nativeLanguage learningLanguage");
 
-    res.status(200).json(outgoingRequests);
+    // Filter out any null/undefined requests
+    const validOutgoingReqs = outgoingRequests ? outgoingRequests.filter(req => req != null) : [];
+
+    res.status(200).json(validOutgoingReqs);
   } catch (error) {
     console.log("Error in getOutgoingFriendReqs controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
